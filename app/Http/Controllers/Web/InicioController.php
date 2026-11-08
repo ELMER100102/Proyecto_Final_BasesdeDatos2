@@ -12,9 +12,12 @@ class InicioController extends Controller
 {
     public function index()
     {
+        $imagenes = ImagenSitio::where('Activo', true)->orderBy('Orden')->get();
+
         return view('web.inicio', [
             'hotel'   => Hotel::first(),
-            'slides'  => ImagenSitio::where('Tipo', 'SLIDE')->where('Activo', true)->orderBy('Orden')->get(),
+            'slides'  => $imagenes->where('Tipo', 'SLIDE'),
+            'galeria' => $imagenes->where('Tipo', 'GALERIA'),
             'tipos'   => TipoHabitacion::where('Activo', true)->orderBy('PrecioNoche')->get(),
             'resenas' => Resena::where('calificacion', '>=', 4)->orderByDesc('fecha')->take(3)->get(),
         ]);

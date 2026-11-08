@@ -7,11 +7,33 @@ use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 /**
- * Aqwui se llaman a los procedimientos almacenados de la bade de datos relacional
+ * lugar de Laravel que llama a los procedimientos almacenados de HotelDB.
  */
 class HotelService
 {
-   //RESERVAS
+    //Disponibilidad de habitaciones: devuelve tipos de habitación con al menos una libre entre esas fechas
+    public function disponibilidad(string $entrada, string $salida, int $personas): array
+    {
+        return DB::select("
+            SELECT t.TipoHabitacionId, t.Nombre, t.Descripcion, t.Capacidad, t.PrecioNoche, t.FotoUrl,
+                   COUNT(h.HabitacionId) AS Libres
+            FROM TipoHabitacion t
+            JOIN Habitacion h ON h.TipoHabitacionId = t.TipoHabitacionId
+            WHERE t.Activo = 1
+              AND t.Capacidad >= ?
+              AND h.Estado <> 'MANTENIMIENTO'
+              AND NOT EXISTS (SELECT 1
+                              FROM DetalleReserva d
+                              JOIN Reserva r ON r.ReservaId = d.ReservaId
+                              WHERE d.HabitacionId = h.HabitacionId
+                                AND r.Estado IN ('PENDIENTE', 'CONFIRMADA', 'EN_CURSO')
+                                AND r.FechaEntrada < ?
+                                AND r.FechaSalida > ?)
+            GROUP BY t.TipoHabitacionId, t.Nombre, t.Descripcion, t.Capacidad, t.PrecioNoche, t.FotoUrl
+            ORDER BY t.PrecioNoche", [$personas, $salida, $entrada]);
+    }
+
+    //RESERVAS
 
     public function crearReserva(int $huespedId, int $tipoHabitacionId, string $fechaEntrada, string $fechaSalida,
                                  int $personas, float $adelanto = 0, ?string $metodo = null, bool $esperaDemo = false): object
@@ -41,9 +63,9 @@ class HotelService
         $this->select('sp_Cargo_Insertar', [$reservaId, $servicioId, $cantidad]);
     }
 
-    //PERSONAS CON DATOS ENCRIPTADOS
+    //PERSONAS (datos encriptados)
 
-    // $tipo: 'HUESPED' o 'EMPLEADO'. Devuelve el PersonaId nuevo.
+    /** $tipo: 'HUESPED' o 'EMPLEADO'. Devuelve el PersonaId nuevo. */
     public function registrarPersona(string $tipo, string $cedula, string $nombre, string $apellidos, string $correo,
                                      ?string $telefono = null, ?string $nacionalidad = 'Costa Rica',
                                      ?string $puesto = null, ?float $salario = null, ?string $contrasenaHash = null): int
@@ -60,16 +82,16 @@ class HotelService
         return $this->select('sp_ObtenerPersona', [$personaId])[0] ?? null;
     }
 
-    //REPORTES
+    //REPORTE DE INGRESOS
 
     public function reporteIngresos(string $desde, string $hasta): array
     {
         return $this->select('sp_ReporteIngresos', [$desde, $hasta]);
     }
 
-    //AYUDANTES
+    //Ayudantes
 
-    // Procedimiento que devuelve filas.
+    // Procedimiento que devuelve filas
     private function select(string $procedimiento, array $parametros = []): array
     {
         try {
@@ -79,7 +101,7 @@ class HotelService
         }
     }
 
-    // Procedimiento que no devuelve filas.
+    // Procedimiento que no devuelve filas
     private function ejecutar(string $procedimiento, array $parametros = []): void
     {
         try {
