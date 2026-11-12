@@ -19,7 +19,7 @@ class AppServiceProvider extends ServiceProvider
         // Se consulta una sola vez por petición.
         $hotel = null;
         // View::composer(['layouts.web', 'web.contacto'], function ($view) use (&$hotel) {
-        View::composer(['layouts.web', 'web.*'], function ($view) use (&$hotel) {
+        View::composer(['layouts.web', 'layouts.admin', 'web.contacto'], function ($view) use (&$hotel) {
         $hotel ??= Hotel::first();
             $view->with('hotelSitio', $hotel);
         });

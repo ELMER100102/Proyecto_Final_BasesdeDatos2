@@ -13,7 +13,7 @@
 
 @include('web.parts.header')
 
-<main class="principal">
+<main class="flex-grow-1">
     @include('web.parts.alertas')
     @yield('contenido')
 </main>

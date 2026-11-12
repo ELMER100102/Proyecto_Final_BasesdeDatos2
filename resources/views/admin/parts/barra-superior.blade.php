@@ -1,10 +1,8 @@
-<nav class="navbar bg-white border-bottom px-4">
-    <span class="navbar-text">@yield('titulo', 'Panel')</span>
-    <div class="d-flex align-items-center gap-3">
-        <span>{{ auth()->user()->persona->Nombre }} · <small class="text-muted">{{ auth()->user()->Rol }}</small></span>
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-            <button class="btn btn-sm btn-outline-secondary">Salir</button>
-        </form>
-    </div>
-</nav>
+{{-- Barra verde visible solo por debajo de 992px; el menú lateral se abre como offcanvas --}}
+<header class="barra-movil d-lg-none">
+    <a href="{{ route('admin.dashboard') }}" class="barra-movil__marca">Arrecife Azul · Panel</a>
+    <button class="btn btn-sm btn-contorno-claro" type="button" data-bs-toggle="offcanvas"
+        data-bs-target="#menuAdmin" aria-controls="menuAdmin" aria-label="Abrir menú">
+        <span class="icono-menu" aria-hidden="true"></span>Menú
+    </button>
+</header>

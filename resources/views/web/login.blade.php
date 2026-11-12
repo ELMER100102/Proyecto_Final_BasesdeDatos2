@@ -3,23 +3,31 @@
 
 @section('contenido')
 <section class="seccion">
-    <div class="contenedor contenedor--angosto">
-        <h1 class="pagina__titulo">Iniciar sesión</h1>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-5">
+                <h1 class="titulo-pagina text-center">Iniciar sesión</h1>
 
-        <form class="formulario" method="POST" action="{{ route('login') }}">
-            @csrf
-            <div class="campo">
-                <label for="correo">Correo</label>
-                <input type="email" id="correo" name="correo" value="{{ old('correo') }}" required autofocus>
-            </div>
-            <div class="campo">
-                <label for="contrasena">Contraseña</label>
-                <input type="password" id="contrasena" name="contrasena" required>
-            </div>
-            <button class="boton boton--primario boton--ancho">Entrar</button>
-        </form>
+                <div class="card">
+                    <div class="card-body">
+                        <form method="POST" action="{{ route('login') }}">
+                            @csrf
+                            <div class="mb-3">
+                                <label class="form-label" for="correo">Correo</label>
+                                <input class="form-control" type="email" id="correo" name="correo" value="{{ old('correo') }}" required autofocus autocomplete="email">
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label" for="contrasena">Contraseña</label>
+                                <input class="form-control" type="password" id="contrasena" name="contrasena" required autocomplete="current-password">
+                            </div>
+                            <button class="btn btn-primary w-100">Entrar</button>
+                        </form>
+                    </div>
+                </div>
 
-        <p class="nota">¿No tiene cuenta? <a class="enlace" href="{{ route('registro') }}">Regístrese</a></p>
+                <p class="nota text-center mt-4 mx-auto">¿No tiene cuenta? <a href="{{ route('registro') }}">Regístrese</a></p>
+            </div>
+        </div>
     </div>
 </section>
 @endsection

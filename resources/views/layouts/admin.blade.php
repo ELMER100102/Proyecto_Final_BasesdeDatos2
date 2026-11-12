@@ -5,23 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('titulo', 'Panel') | Administración</title>
 
-    {{-- PROVISIONAL: Bootstrap por CDN. Al integrar AdminLTE, reemplazar por sus archivos:
-         <link href="{{ asset('admin/css/adminlte.min.css') }}" rel="stylesheet"> --}}
     @include('admin.parts.css')
 
     @stack('estilos')
 </head>
-<body class="bg-light">
+<body>
 
-<div class="d-flex min-vh-100">
-    {{-- Menú lateral --}}
+@php $u = auth()->user(); @endphp
+
+{{-- Barra superior (solo en celular): abre el menú lateral --}}
+@include('admin.parts.barra-superior')
+
+<div class="admin-shell d-flex">
+    {{-- Menú lateral (offcanvas en celular) --}}
     @include('admin.parts.sidebar')
 
-    <div class="flex-grow-1">
-        {{-- Barra superior --}}
-        @include('admin.parts.barra-superior')
-        
-        <main class="p-4">
+    <div class="admin-main">
+        <main class="admin-contenido">
+            <div class="encabezado-pagina">
+                <h1 class="titulo-pagina">@yield('titulo', 'Panel')</h1>
+                @hasSection('acciones')
+                    <div class="d-flex flex-wrap gap-2 no-imprimir">@yield('acciones')</div>
+                @endif
+            </div>
+
             @if (session('ok'))
                 <div class="alert alert-success">{{ session('ok') }}</div>
             @endif
