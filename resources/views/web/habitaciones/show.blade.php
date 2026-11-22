@@ -1,6 +1,7 @@
 @extends('layouts.web')
 @section('titulo', $tipo->Nombre)
 
+
 @section('contenido')
 <section class="seccion">
     <div class="container">
@@ -21,6 +22,7 @@
                 <p>{{ $tipo->Descripcion }}</p>
                 <ul class="datos">
                     <li>Hasta {{ $tipo->Capacidad }} personas</li>
+                    @include('web.parts.calificacion', ['nombre' => $tipo->Nombre])
                 </ul>
                 <p class="precio mb-4">
                     <span class="precio__monto">₡{{ number_format($tipo->PrecioNoche, 0, ',', '.') }}</span>

@@ -1,8 +1,8 @@
 {{-- Menú lateral: fijo desde 992px; en celular es un offcanvas que abre la barra superior --}}
 <aside class="offcanvas-lg offcanvas-start menu-admin" tabindex="-1" id="menuAdmin" aria-label="Menú del panel">
     <div class="offcanvas-header d-lg-none">
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"
-            data-bs-target="#menuAdmin" aria-label="Cerrar menú"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" data-bs-target="#menuAdmin"
+            aria-label="Cerrar menú"></button>
     </div>
 
     <div class="offcanvas-body">
@@ -35,6 +35,10 @@
                     href="{{ route('admin.servicios.index') }}">Servicios</a>
                 <a class="nav-link {{ request()->routeIs('admin.usuarios.*') ? 'active' : '' }}"
                     href="{{ route('admin.usuarios.index') }}">Usuarios</a>
+
+                <div class="titulo">Control</div>
+                <a href="{{ route('admin.auditoria') }}"
+                    class="nav-link {{ request()->routeIs('admin.auditoria') ? 'active' : '' }}">Auditoría</a>
 
                 <div class="titulo">Sitio web</div>
                 <a class="nav-link {{ request()->routeIs('admin.hotel.*') ? 'active' : '' }}"

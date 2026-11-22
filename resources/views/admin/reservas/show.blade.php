@@ -25,90 +25,90 @@
             <div class="card mb-3">
                 <div class="card-header">Habitaciones</div>
                 <div class="table-responsive">
-                <table class="table mb-0">
-                    <thead>
-                        <tr>
-                            <th>Habitación</th>
-                            <th>Tipo</th>
-                            <th>Noches</th>
-                            <th class="text-end">Precio noche</th>
-                            <th class="text-end">Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($reserva->detalles as $d)
+                    <table class="table mb-0">
+                        <thead>
                             <tr>
-                                <td>{{ $d->habitacion->Numero }} @include('admin.parts.estado', ['estado' => $d->habitacion->Estado])</td>
-                                <td>{{ $d->habitacion->tipo->Nombre }}</td>
-                                <td>{{ $d->Noches }}</td>
-                                <td class="text-end">₡{{ number_format($d->PrecioNoche, 0, ',', '.') }}</td>
-                                <td class="text-end">₡{{ number_format($d->Subtotal, 0, ',', '.') }}</td>
+                                <th>Habitación</th>
+                                <th>Tipo</th>
+                                <th>Noches</th>
+                                <th class="text-end">Precio noche</th>
+                                <th class="text-end">Subtotal</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach ($reserva->detalles as $d)
+                                <tr>
+                                    <td>{{ $d->habitacion->Numero }} @include('admin.parts.estado', ['estado' => $d->habitacion->Estado])</td>
+                                    <td>{{ $d->habitacion->tipo->Nombre }}</td>
+                                    <td>{{ $d->Noches }}</td>
+                                    <td class="text-end">₡{{ number_format($d->PrecioNoche, 0, ',', '.') }}</td>
+                                    <td class="text-end">₡{{ number_format($d->Subtotal, 0, ',', '.') }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
             <div class="card mb-3">
                 <div class="card-header">Consumos</div>
                 <div class="table-responsive">
-                <table class="table mb-0">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Servicio</th>
-                            <th>Cantidad</th>
-                            <th class="text-end">Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($reserva->cargos as $c)
+                    <table class="table mb-0">
+                        <thead>
                             <tr>
-                                <td>{{ $c->Fecha->format('d/m/Y H:i') }}</td>
-                                <td>{{ $c->servicio->Nombre }}</td>
-                                <td>{{ $c->Cantidad }}</td>
-                                <td class="text-end">₡{{ number_format($c->subtotal, 0, ',', '.') }}</td>
+                                <th>Fecha</th>
+                                <th>Servicio</th>
+                                <th>Cantidad</th>
+                                <th class="text-end">Subtotal</th>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="text-muted">Sin consumos.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @forelse ($reserva->cargos as $c)
+                                <tr>
+                                    <td>{{ $c->Fecha->format('d/m/Y H:i') }}</td>
+                                    <td>{{ $c->servicio->Nombre }}</td>
+                                    <td>{{ $c->Cantidad }}</td>
+                                    <td class="text-end">₡{{ number_format($c->subtotal, 0, ',', '.') }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-muted">Sin consumos.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
             <div class="card">
                 <div class="card-header">Pagos</div>
                 <div class="table-responsive">
-                <table class="table mb-0">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Tipo</th>
-                            <th>Método</th>
-                            <th class="text-end">Monto</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($reserva->pagos as $p)
+                    <table class="table mb-0">
+                        <thead>
                             <tr>
-                                <td>{{ $p->Fecha->format('d/m/Y H:i') }}</td>
-                                <td>{{ $p->Tipo }}</td>
-                                <td>{{ $p->Metodo }}</td>
-                                <td class="text-end {{ $p->Tipo === 'REEMBOLSO' ? 'text-danger' : '' }}">
-                                    {{ $p->Tipo === 'REEMBOLSO' ? '-' : '' }}₡{{ number_format($p->Monto, 0, ',', '.') }}
-                                </td>
+                                <th>Fecha</th>
+                                <th>Tipo</th>
+                                <th>Método</th>
+                                <th class="text-end">Monto</th>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="text-muted">Sin pagos.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @forelse ($reserva->pagos as $p)
+                                <tr>
+                                    <td>{{ $p->Fecha->format('d/m/Y H:i') }}</td>
+                                    <td>{{ $p->Tipo }}</td>
+                                    <td>{{ $p->Metodo }}</td>
+                                    <td class="text-end {{ $p->Tipo === 'REEMBOLSO' ? 'text-danger' : '' }}">
+                                        {{ $p->Tipo === 'REEMBOLSO' ? '-' : '' }}₡{{ number_format($p->Monto, 0, ',', '.') }}
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-muted">Sin pagos.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -118,12 +118,15 @@
             <div class="card mb-3 resumen-totales">
                 <div class="card-body">
                     <div class="fila-total"><span>Total (con
-                            impuesto)</span><strong class="monto">₡{{ number_format($reserva->Total, 0, ',', '.') }}</strong></div>
+                            impuesto)</span><strong
+                            class="monto">₡{{ number_format($reserva->Total, 0, ',', '.') }}</strong></div>
                     <div class="fila-total">
-                        <span>Pagado</span><span class="monto">₡{{ number_format($reserva->pagado, 0, ',', '.') }}</span></div>
+                        <span>Pagado</span><span class="monto">₡{{ number_format($reserva->pagado, 0, ',', '.') }}</span>
+                    </div>
                     <hr>
                     <div class="fila-total fila-total--saldo">
-                        <span>Saldo</span><strong class="monto">₡{{ number_format($saldo, 0, ',', '.') }}</strong></div>
+                        <span>Saldo</span><strong class="monto">₡{{ number_format($saldo, 0, ',', '.') }}</strong>
+                    </div>
                 </div>
             </div>
 
@@ -193,6 +196,13 @@
                         </form>
                     </div>
                 </div>
+            @endif
+
+            @if (in_array($reserva->Estado, ['EN_CURSO', 'FINALIZADA']))
+                <a href="{{ route('admin.reservas.factura', $reserva->ReservaId) }}" target="_blank"
+                    class="btn btn-outline-dark">
+                    {{ $reserva->Estado === 'FINALIZADA' ? 'Descargar factura' : 'Estado de cuenta' }} (PDF)
+                </a>
             @endif
         </div>
     </div>

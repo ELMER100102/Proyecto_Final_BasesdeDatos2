@@ -23,5 +23,7 @@ class AppServiceProvider extends ServiceProvider
         $hotel ??= Hotel::first();
             $view->with('hotelSitio', $hotel);
         });
+
+        $this->app->singleton(\App\Services\CalificacionService::class);
     }
 }

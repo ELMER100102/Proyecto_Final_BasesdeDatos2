@@ -39,6 +39,8 @@
         </div>
     </div>
 
+    @include('admin.parts.graficos')
+
     <div class="card">
         <div class="card-header d-flex justify-content-between">
             <span>Últimas reservas</span>

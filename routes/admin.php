@@ -12,6 +12,8 @@ use App\Http\Controllers\Admin\ReservaController;
 use App\Http\Controllers\Admin\ServicioController;
 use App\Http\Controllers\Admin\TipoHabitacionController;
 use App\Http\Controllers\Admin\UsuarioController;
+use App\Http\Controllers\Admin\AuditoriaController;
+use App\Http\Controllers\Admin\FacturaController;
 use Illuminate\Support\Facades\Route;
 
 //PANEL ADMINISTRAIVO DEL ADMIN
@@ -29,6 +31,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'rol:ADMINISTRADOR,R
     Route::post('reservas/{id}/cargo', [ReservaController::class, 'cargo'])->name('reservas.cargo');
     Route::post('reservas/{id}/check-out', [ReservaController::class, 'checkOut'])->name('reservas.checkout');
     Route::post('reservas/{id}/cancelar', [ReservaController::class, 'cancelar'])->name('reservas.cancelar');
+    Route::get('reservas/{id}/factura', [FacturaController::class, 'show'])->name('reservas.factura');
 
     Route::get('huespedes', [HuespedController::class, 'index'])->name('huespedes.index');
     Route::get('huespedes/nuevo', [HuespedController::class, 'create'])->name('huespedes.create');
@@ -63,5 +66,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'rol:ADMINISTRADOR,R
         Route::get('mensajes', [MensajeController::class, 'index'])->name('mensajes.index');
         Route::post('mensajes/{id}/marcar', [MensajeController::class, 'marcar'])->name('mensajes.marcar');
         Route::delete('mensajes/{id}', [MensajeController::class, 'destroy'])->name('mensajes.destroy');
+
+        Route::get('auditoria', [AuditoriaController::class, 'index'])->name('auditoria');
     });
 });

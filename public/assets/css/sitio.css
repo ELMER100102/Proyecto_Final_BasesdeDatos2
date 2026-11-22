@@ -633,3 +633,9 @@ body.con-reserva-fija { padding-bottom: 110px; }        /* que no tape el pie */
 @media (prefers-reduced-motion: reduce) { .reserva-fija { animation: none; } }
 
 .reserva-fija .reserva-fija__boton { color: #1c1917; }
+
+/* Calificación promedio (MongoDB) */
+.calificacion-promedio { display: flex; align-items: baseline; gap: .35rem; margin: .25rem 0 .5rem; font-size: .95rem; }
+.calificacion-promedio__estrella { color: var(--color-moss, #008236); }
+.calificacion-promedio strong { color: var(--color-midnight-ink, #1c1917); }
+.calificacion-promedio__total, .calificacion-promedio--vacia { color: var(--color-stone, #44403b); font-size: .85rem; }

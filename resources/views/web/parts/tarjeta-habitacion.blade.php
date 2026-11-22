@@ -5,6 +5,9 @@
     @endif
     <div class="card-body d-flex flex-column">
         <h3 class="card-title mb-2">{{ $tipo->Nombre }}</h3>
+
+        @include('web.parts.calificacion', ['nombre' => $tipo->Nombre])
+
         <p class="card-text">{{ $tipo->Descripcion }}</p>
         <ul class="datos">
             <li>Hasta {{ $tipo->Capacidad }} personas</li>

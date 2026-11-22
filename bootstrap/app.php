@@ -23,6 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Si alguien sin sesión entra a una ruta protegida, va al login
         $middleware->redirectGuestsTo(fn () => route('login'));
+
+        // Middleware que le dice a SQL Server qué usuario de la aplicación está haciendo la petición
+        $middleware->web(append: [\App\Http\Middleware\UsuarioEnSql::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
