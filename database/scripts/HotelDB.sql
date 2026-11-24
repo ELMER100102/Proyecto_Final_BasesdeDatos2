@@ -11,10 +11,10 @@ CREATE TABLE Hotel (
     LogoUrl  NVARCHAR(255) NULL,
     Direccion NVARCHAR(255) NOT NULL,
     Latitud DECIMAL(9,6)  NULL,
-    Longitud DECIMAL(9,6)  NULL,
-    Telefono VARCHAR(20)   NOT NULL,
-    Correo VARCHAR(100)  NOT NULL,
-    PorcentajeImpuesto DECIMAL(5,2)  NOT NULL DEFAULT 13
+    Longitud DECIMAL(9,6) NULL,
+    Telefono VARCHAR(20) NOT NULL,
+    Correo VARCHAR(100) NOT NULL,
+    PorcentajeImpuesto DECIMAL(5,2) NOT NULL DEFAULT 13
         CHECK (PorcentajeImpuesto BETWEEN 0 AND 100)
 );
 
@@ -22,7 +22,7 @@ CREATE TABLE Hotel (
 CREATE TABLE ImagenSitio (
     ImagenId INT IDENTITY(1,1) PRIMARY KEY,
     HotelId INT NOT NULL REFERENCES Hotel(HotelId),
-    Tipo VARCHAR(10)   NOT NULL CHECK (Tipo IN ('SLIDE', 'GALERIA')),
+    Tipo VARCHAR(10) NOT NULL CHECK (Tipo IN ('SLIDE', 'GALERIA')),
     Titulo NVARCHAR(100) NULL,
     ImagenUrl NVARCHAR(255) NOT NULL,
     Orden TINYINT NOT NULL DEFAULT 1,
@@ -46,7 +46,7 @@ CREATE TABLE Huesped (
 
 CREATE TABLE Empleado (
     PersonaId INT PRIMARY KEY REFERENCES Persona(PersonaId),
-    Puesto VARCHAR(20)   NOT NULL CHECK (Puesto IN ('ADMINISTRADOR', 'RECEPCIONISTA')),
+    Puesto VARCHAR(20) NOT NULL CHECK (Puesto IN ('ADMINISTRADOR', 'RECEPCIONISTA')),
     Salario DECIMAL(12,2) NOT NULL CHECK (Salario > 0)
 );
 
@@ -61,7 +61,7 @@ CREATE TABLE Usuario (
 
 CREATE TABLE TipoHabitacion (
     TipoHabitacionId  INT IDENTITY(1,1) PRIMARY KEY,
-    Nombre   NVARCHAR(60)  NOT NULL UNIQUE,
+    Nombre NVARCHAR(60) NOT NULL UNIQUE,
     Descripcion NVARCHAR(500) NULL,
     Capacidad TINYINT NOT NULL CHECK (Capacidad > 0),
     PrecioNoche DECIMAL(12,2) NOT NULL CHECK (PrecioNoche > 0),
@@ -1075,21 +1075,25 @@ BEGIN
         IF EXISTS (SELECT 1 FROM inserted i JOIN deleted d ON d.PagoId = i.PagoId WHERE i.Monto <> d.Monto)
             THROW 50011, 'El monto de un pago no se puede modificar. Registre un reembolso.', 1;
 
+        -- Usuario de la aplicación (Laravel) o, si no hay, el login de SQL Server
+        DECLARE @Usuario NVARCHAR(128) =
+            COALESCE(CAST(SESSION_CONTEXT(N'usuario') AS NVARCHAR(128)), SUSER_SNAME());
+
         -- Nuevos
-        INSERT INTO Auditoria (Tabla, Operacion, Datos)
-        SELECT 'Pago', 'I', (SELECT x.* FROM inserted x WHERE x.PagoId = i.PagoId FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)
+        INSERT INTO Auditoria (Tabla, Operacion, Datos, Usuario)
+        SELECT 'Pago', 'I', (SELECT x.* FROM inserted x WHERE x.PagoId = i.PagoId FOR JSON PATH, WITHOUT_ARRAY_WRAPPER), @Usuario
         FROM inserted i
         WHERE NOT EXISTS (SELECT 1 FROM deleted d WHERE d.PagoId = i.PagoId);
 
         -- Modificados
-        INSERT INTO Auditoria (Tabla, Operacion, Datos)
-        SELECT 'Pago', 'U', (SELECT x.* FROM inserted x WHERE x.PagoId = i.PagoId FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)
+        INSERT INTO Auditoria (Tabla, Operacion, Datos, Usuario)
+        SELECT 'Pago', 'U', (SELECT x.* FROM inserted x WHERE x.PagoId = i.PagoId FOR JSON PATH, WITHOUT_ARRAY_WRAPPER), @Usuario
         FROM inserted i
         WHERE EXISTS (SELECT 1 FROM deleted d WHERE d.PagoId = i.PagoId);
 
         -- Borrados
-        INSERT INTO Auditoria (Tabla, Operacion, Datos)
-        SELECT 'Pago', 'D', (SELECT x.* FROM deleted x WHERE x.PagoId = d.PagoId FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)
+        INSERT INTO Auditoria (Tabla, Operacion, Datos, Usuario)
+        SELECT 'Pago', 'D', (SELECT x.* FROM deleted x WHERE x.PagoId = d.PagoId FOR JSON PATH, WITHOUT_ARRAY_WRAPPER), @Usuario
         FROM deleted d
         WHERE NOT EXISTS (SELECT 1 FROM inserted i WHERE i.PagoId = d.PagoId);
     END TRY
@@ -1125,12 +1129,108 @@ BEGIN
 END
 GO
 
+/* AFTER UPDATE: historial de cambios de estado de las reservas.
+   Guarda el estado anterior y el nuevo en JSON. */
+CREATE OR ALTER TRIGGER tr_Reserva_AuditoriaEstado
+ON Reserva
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    IF NOT UPDATE(Estado) RETURN;
+    BEGIN TRY
+        DECLARE @Usuario NVARCHAR(128) =
+            COALESCE(CAST(SESSION_CONTEXT(N'usuario') AS NVARCHAR(128)), SUSER_SNAME());
+
+        INSERT INTO Auditoria (Tabla, Operacion, Datos, Usuario)
+        SELECT 'Reserva', 'U',
+               (SELECT i.ReservaId,
+                       d.Estado AS EstadoAnterior,
+                       i.Estado AS EstadoNuevo,
+                       i.Total
+                FOR JSON PATH, WITHOUT_ARRAY_WRAPPER),
+               @Usuario
+        FROM inserted i
+        JOIN deleted d ON d.ReservaId = i.ReservaId
+        WHERE i.Estado <> d.Estado;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK;
+        THROW;
+    END CATCH
+END
+GO
+
+/* Consulta del historial de auditoría.
+   La aplicación tiene DENY SELECT sobre la tabla Auditoria: solo puede leerla
+   por medio de este procedimiento (encadenamiento de propiedad: el procedimiento
+   y la tabla pertenecen a dbo, así que SQL Server no revisa el permiso de la tabla). */
+CREATE OR ALTER PROCEDURE sp_ConsultarAuditoria
+    @Desde DATE,
+    @Hasta DATE,
+    @Tabla VARCHAR(30) = NULL
+AS
+BEGIN
+
+    BEGIN TRY
+        IF @Hasta < @Desde
+            THROW 50030, 'La fecha final no puede ser menor que la inicial.', 1;
+
+        SELECT TOP (1000) AuditoriaId, Tabla, Operacion, Datos, Usuario, Fecha
+        FROM Auditoria
+        WHERE Fecha >= @Desde
+          AND Fecha <  DATEADD(DAY, 1, @Hasta)
+          AND (@Tabla IS NULL OR Tabla = @Tabla)
+        ORDER BY AuditoriaId DESC;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END
+GO
+
+--RESPALDOS
+CREATE OR ALTER PROCEDURE sp_RespaldarBase
+    @Carpeta NVARCHAR(260) = NULL
+WITH EXECUTE AS OWNER
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        -- Validación de la carpeta recibida
+        IF @Carpeta IS NOT NULL
+           AND (@Carpeta NOT LIKE N'[A-Za-z]:\%' OR @Carpeta LIKE N'%..%')
+            THROW 50041, 'La carpeta de respaldos no es válida.', 1;
+
+        SET @Carpeta = COALESCE(NULLIF(LTRIM(RTRIM(@Carpeta)), N''),
+                                CAST(SERVERPROPERTY('InstanceDefaultBackupPath') AS NVARCHAR(260)));
+        IF @Carpeta IS NULL
+            THROW 50040, 'No se encontró la carpeta de respaldos de la instancia.', 1;
+
+        DECLARE @Archivo NVARCHAR(100) = N'HotelDB_' + FORMAT(SYSDATETIME(), 'yyyyMMdd_HHmmss') + N'.bak';
+        DECLARE @Ruta    NVARCHAR(400) = @Carpeta
+                                       + CASE WHEN RIGHT(@Carpeta, 1) = N'\' THEN N'' ELSE N'\' END
+                                       + @Archivo;
+
+        BACKUP DATABASE HotelDB
+            TO DISK = @Ruta
+            WITH COPY_ONLY, INIT, CHECKSUM,
+                 NAME = N'HotelDB - respaldo desde el panel';
+
+        SELECT @Archivo AS Archivo, @Ruta AS Ruta, SYSDATETIME() AS Fecha;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END
+GO
+
 /*
    9. SEGURIDAD
-   Login            Rol de base de datos   Permisos
-   app_hotel        rol_aplicacion         leer y escribir tablas + ejecutar procedimientos (Laravel)
-   admin_hotel      rol_administrador      todo lo anterior + ver auditoría
-   recep_hotel      rol_recepcion          solo los procedimientos de reservas
+   Login  Rol de base de datos Permisos
+   app_hotel, rol_aplicacion, leer y escribir tablas + ejecutar procedimientos (Laravel)
+   admin_hotel, rol_administrador, todo lo anterior + ver auditoría
+   recep_hotel, rol_recepcion, solo los procedimientos de reservas
    Nadie puede modificar ni borrar la auditoría. Ninguno tiene permiso sobre
    la llave de encriptación: solo la usan sp_RegistrarPersona y sp_ObtenerPersona.
 */
@@ -1240,57 +1340,3 @@ EXEC sp_Cargo_Insertar 6, 1, 2;                           -- 2 desayunos
 SELECT @E = DATEADD(DAY, 5, @Hoy), @S = DATEADD(DAY, 8, @Hoy);
 EXEC sp_CrearReserva 4, 2, @E, @S, 2;                     -- 7: Superior, PENDIENTE
 GO
-
-/* =====================================================================
-   11. PRUEBAS PARA LA DEFENSA
-   Todo este bloque está en comentario. Para probar, seleccione solo las
-   líneas de una prueba y ejecútelas (F5 ejecuta únicamente lo seleccionado).
-   Háganlas en este orden, justo después de crear la base.
-
--- a) Crear una reserva y ver un error controlado
-DECLARE @E DATE = DATEADD(DAY, 10, CAST(GETDATE() AS DATE)), @S DATE = DATEADD(DAY, 12, CAST(GETDATE() AS DATE));
-EXEC sp_CrearReserva 5, 1, @E, @S, 2, 20000, 'TARJETA';   -- correcta: será la reserva 8
-EXEC sp_CrearReserva 5, 1, @E, @S, 5;                      -- error: supera la capacidad
-
--- b) Consumo a una reserva que no está en curso (trigger tr_Cargo_AfterInsert)
-EXEC sp_Cargo_Insertar 7, 1, 1;
-
--- c) CONCURRENCIA (antes del check-out de la prueba d).
---    Mañana solo queda libre la Suite 302, porque la 301 está ocupada por la reserva 6.
---    Abra dos ventanas de consulta en SSMS.
---    Ventana 1 (retiene el bloqueo 10 segundos):
-DECLARE @E DATE = DATEADD(DAY, 1, CAST(GETDATE() AS DATE)), @S DATE = DATEADD(DAY, 2, CAST(GETDATE() AS DATE));
-EXEC sp_CrearReserva 3, 3, @E, @S, 2, 0, NULL, 1;
---    Ventana 2 (ejecútela enseguida): espera a la ventana 1 y luego dice que no hay disponibilidad
-DECLARE @E DATE = DATEADD(DAY, 1, CAST(GETDATE() AS DATE)), @S DATE = DATEADD(DAY, 2, CAST(GETDATE() AS DATE));
-EXEC sp_CrearReserva 4, 3, @E, @S, 2;
-
--- d) Check-out: primero sin pagar (error), luego pagando el saldo exacto
-EXEC sp_CheckOut 6;
-EXEC sp_CheckOut 6, 188430, 'TARJETA';
-
--- e) Cancelar una reserva
-EXEC sp_CancelarReserva 7;
-
--- f) INSTEAD OF DELETE: la reserva 8 (prueba a) tiene un adelanto, así que queda CANCELADA
-DELETE FROM Reserva WHERE ReservaId = 8;
-SELECT ReservaId, Estado FROM Reserva;
-
--- g) Auditoría de pagos y regla del monto
-UPDATE Pago SET Monto = 1 WHERE PagoId = 1;               -- error
-SELECT * FROM Auditoria;
-
--- h) Reporte de los últimos 3 meses
-DECLARE @D DATE = DATEADD(MONTH, -3, GETDATE()), @H DATE = GETDATE();
-EXEC sp_ReporteIngresos @D, @H;
-
--- i) Encriptación: la tabla muestra bytes, el procedimiento los descifra
-SELECT PersonaId, Nombre, Cedula, Telefono FROM Persona;
-EXEC sp_ObtenerPersona 3;
-
--- j) Seguridad: recepción no puede leer tablas, pero sí usar sus procedimientos
-EXECUTE AS USER = 'recep_hotel';
-SELECT * FROM Persona;                                     -- error de permisos
-EXEC sp_ReporteIngresos '2026-01-01', '2026-12-31';        -- permitido
-REVERT;
-   ===================================================================== */

@@ -39,6 +39,8 @@
                 <div class="titulo">Control</div>
                 <a href="{{ route('admin.auditoria') }}"
                     class="nav-link {{ request()->routeIs('admin.auditoria') ? 'active' : '' }}">Auditoría</a>
+                <a href="{{ route('admin.respaldos.index') }}"
+                    class="nav-link {{ request()->routeIs('admin.respaldos.*') ? 'active' : '' }}">Respaldos</a>
 
                 <div class="titulo">Sitio web</div>
                 <a class="nav-link {{ request()->routeIs('admin.hotel.*') ? 'active' : '' }}"

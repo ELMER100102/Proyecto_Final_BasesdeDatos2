@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\TipoHabitacionController;
 use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\FacturaController;
+use App\Http\Controllers\Admin\RespaldoController;
 use Illuminate\Support\Facades\Route;
 
 //PANEL ADMINISTRAIVO DEL ADMIN
@@ -66,6 +67,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'rol:ADMINISTRADOR,R
         Route::get('mensajes', [MensajeController::class, 'index'])->name('mensajes.index');
         Route::post('mensajes/{id}/marcar', [MensajeController::class, 'marcar'])->name('mensajes.marcar');
         Route::delete('mensajes/{id}', [MensajeController::class, 'destroy'])->name('mensajes.destroy');
+
+        Route::get('respaldos', [RespaldoController::class, 'index'])->name('respaldos.index');
+        Route::post('respaldos/sql', [RespaldoController::class, 'sqlServer'])->name('respaldos.sql');
+        Route::get('respaldos/{id}/descargar', [RespaldoController::class, 'descargar'])->name('respaldos.descargar');
 
         Route::get('auditoria', [AuditoriaController::class, 'index'])->name('auditoria');
     });
